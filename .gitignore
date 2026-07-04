@@ -1,0 +1,64 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# database (contains real student/parent data — never commit)
+/prisma/dev.db
+/prisma/dev.db-journal
+*.db
+*.db-journal
+
+# uploaded files (exam papers, receipts, course files — real personal/financial data)
+/public/uploads/
+
+# local logs
+*.log
+dev.log
+
+# Claude Code local settings (machine-specific, not shared)
+/.claude/settings.local.json
+
+# personal notes (credentials / how-to notes — not for the repo)
+/Κωδικοι.txt
+/Για ανοιγμα.txt
