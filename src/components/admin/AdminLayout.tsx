@@ -17,7 +17,7 @@ const navItems = [
   { href: "/admin/files", label: "Αρχεία", icon: FolderOpen },
   { href: "/admin/exams", label: "Τέστ/Διαγωνίσματα", icon: ClipboardList },
   { href: "/admin/blog", label: "Edu-Shots Blog", icon: FileText },
-  { href: "/admin/success-stories", label: "Επιτυχόντες", icon: Trophy },
+  { href: "/admin/success-stories", label: "Βαθμοί Πανελληνίων/Επιτυχόντες", icon: Trophy },
 ];
 
 const secretaryItems = [

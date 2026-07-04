@@ -4,11 +4,11 @@ import { Trophy } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function SuccessStoriesPage() {
-  const stories = await prisma.successStory.findMany({ orderBy: [{ year: "desc" }, { order: "asc" }] });
+  const stories = await prisma.successStory.findMany({ orderBy: [{ academicYear: "desc" }, { order: "asc" }] });
 
   const byYear = stories.reduce((acc, s) => {
-    if (!acc[s.year]) acc[s.year] = [];
-    acc[s.year].push(s);
+    if (!acc[s.academicYear]) acc[s.academicYear] = [];
+    acc[s.academicYear].push(s);
     return acc;
   }, {} as Record<number, typeof stories>);
 
@@ -33,7 +33,7 @@ export default async function SuccessStoriesPage() {
                 {byYear[year].map((s) => (
                   <div key={s.id} className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-2xl p-4 text-center">
                     <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-                    <p className="font-bold text-gray-900">{s.name}</p>
+                    <p className="font-bold text-gray-900">{s.firstName} {s.lastName}</p>
                     <p className="text-blue-700 font-medium text-sm mt-1">{s.university}</p>
                     {s.department && <p className="text-gray-500 text-xs mt-0.5">{s.department}</p>}
                   </div>

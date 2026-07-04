@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 
 type Story = {
   id: string;
-  name: string;
-  year: number;
+  firstName: string;
+  lastName: string;
+  academicYear: number;
   university: string;
   department: string | null;
 };
@@ -45,10 +46,10 @@ export default function SuccessPreview({ stories }: { stories: Story[] }) {
               <div className="w-14 h-14 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Trophy className="w-7 h-7 text-yellow-400" />
               </div>
-              <h3 className="font-semibold text-lg">{story.name}</h3>
+              <h3 className="font-semibold text-lg">{story.firstName} {story.lastName}</h3>
               <p className="text-yellow-300 text-sm font-medium mt-1">{story.university}</p>
               {story.department && <p className="text-blue-200 text-xs mt-1">{story.department}</p>}
-              <p className="text-blue-300 text-xs mt-2">{story.year}</p>
+              <p className="text-blue-300 text-xs mt-2">{story.academicYear}</p>
             </motion.div>
           ))}
         </div>

@@ -174,13 +174,20 @@ model Teacher {
 }
 
 model SuccessStory {
-  id         String  @id @default(cuid())
-  name       String
-  year       Int
-  university String
-  department String?
-  photoUrl   String?
-  order      Int     @default(0)
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  academicYear    Int                 // ακαδημαϊκό/εισαγωγικό έτος
+  direction       String              // "Θετική" | "Οικονομίας/Πληροφορικής" | "Θεωρητική"
+  directionTrack  String?             // "Μαθηματικά" | "Βιολογία" — only when direction = "Θετική"
+  university      String              // Ίδρυμα εισαγωγής
+  department      String?             // Τμήμα εισαγωγής
+  grades          String?             // JSON: [{"subject":"Μαθηματικά","score":18.5}, ...]
+  generalScore    Float?              // Γενικός Βαθμός Πρόσβασης (0-20)
+  admissionPoints Float?              // Μόρια Εισαγωγής
+  photoUrl        String?
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
 }
 
 model Group {
