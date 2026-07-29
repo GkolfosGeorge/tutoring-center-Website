@@ -6,11 +6,16 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Users, FolderOpen,
-  FileText, Trophy, LogOut, Menu, GraduationCap, ChevronRight, CalendarDays, Layers, ClipboardList
+  FileText, Trophy, LogOut, Menu, GraduationCap, ChevronRight, CalendarDays, Layers, ClipboardList, Megaphone
 } from "lucide-react";
 import { signOut } from "next-auth/react";
+import Footer from "@/components/layout/Footer";
+import AnnouncementsModal from "./AnnouncementsModal";
+
+const ANNOUNCEMENTS_ITEM = { href: null, label: "Ανακοινώσεις", icon: Megaphone };
 
 const navItems = [
+  ANNOUNCEMENTS_ITEM,
   { href: "/admin/calendar", label: "Ημερολόγιο", icon: CalendarDays },
   { href: "/admin/groups", label: "Τμήματα", icon: Layers },
   { href: "/admin/students", label: "Μαθητές", icon: Users },
@@ -21,6 +26,7 @@ const navItems = [
 ];
 
 const secretaryItems = [
+  ANNOUNCEMENTS_ITEM,
   { href: "/admin/calendar", label: "Ημερολόγιο", icon: CalendarDays },
   { href: "/admin/groups", label: "Τμήματα", icon: Layers },
   { href: "/admin/students", label: "Μαθητές", icon: Users },
@@ -36,6 +42,7 @@ export default function AdminLayout({
   role: string;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const pathname = usePathname();
 
   const visibleItems = role === "SECRETARY" ? secretaryItems : navItems;
@@ -65,6 +72,18 @@ export default function AdminLayout({
 
         <nav className="px-3 py-4 space-y-0.5">
           {visibleItems.map((item) => {
+            if (!item.href) {
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => { setAnnouncementsOpen(true); setSidebarOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-white"
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  {item.label}
+                </button>
+              );
+            }
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
@@ -121,7 +140,11 @@ export default function AdminLayout({
         >
           {children}
         </motion.main>
+
+        <Footer />
       </div>
+
+      <AnnouncementsModal open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} />
     </div>
   );
 }

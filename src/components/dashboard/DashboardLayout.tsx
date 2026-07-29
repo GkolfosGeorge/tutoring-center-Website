@@ -1,20 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, BookOpen, UserX, CreditCard, FolderOpen,
-  LogOut, Menu, X, GraduationCap, ChevronRight
+  CalendarDays, BookOpen, UserX, FolderOpen,
+  Menu, GraduationCap, ChevronRight, Bell
 } from "lucide-react";
 import { signOut } from "next-auth/react";
+import Footer from "@/components/layout/Footer";
+import NotificationsModal, { type Announcement } from "./NotificationsModal";
+
+const NOTIFICATIONS_ITEM = { href: null, label: "Ειδοποιήσεις", icon: Bell };
 
 const navItems = [
-  { href: "/dashboard", label: "Επισκόπηση", icon: LayoutDashboard },
+  NOTIFICATIONS_ITEM,
+  { href: "/dashboard", label: "Ημερολόγιο", icon: CalendarDays },
   { href: "/dashboard/grades", label: "Βαθμοί", icon: BookOpen },
   { href: "/dashboard/absences", label: "Απουσίες", icon: UserX },
-  { href: "/dashboard/payments", label: "Πληρωμές", icon: CreditCard },
   { href: "/dashboard/files", label: "Αρχεία", icon: FolderOpen },
 ];
 
@@ -26,7 +30,30 @@ export default function DashboardLayout({
   userName: string;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [unseenCount, setUnseenCount] = useState(0);
   const pathname = usePathname();
+
+  useEffect(() => {
+    fetch("/api/dashboard/announcements")
+      .then((r) => (r.ok ? r.json() : { announcements: [], unseenCount: 0 }))
+      .then((data) => {
+        setAnnouncements(data.announcements ?? []);
+        setUnseenCount(data.unseenCount ?? 0);
+      });
+  }, []);
+
+  function toggleNotifications() {
+    setNotificationsOpen((wasOpen) => {
+      const next = !wasOpen;
+      if (next && unseenCount > 0) {
+        fetch("/api/dashboard/announcements", { method: "POST" });
+        setUnseenCount(0);
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -49,6 +76,23 @@ export default function DashboardLayout({
 
         <nav className="px-3 py-4 space-y-1">
           {navItems.map((item) => {
+            if (!item.href) {
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => { toggleNotifications(); setSidebarOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  {item.label}
+                  {unseenCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {unseenCount}
+                    </span>
+                  )}
+                </button>
+              );
+            }
             const active = pathname === item.href;
             return (
               <Link
@@ -68,16 +112,6 @@ export default function DashboardLayout({
             );
           })}
         </nav>
-
-        <div className="absolute bottom-4 left-0 right-0 px-3">
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Αποσύνδεση
-          </button>
-        </div>
       </aside>
 
       {sidebarOpen && (
@@ -96,9 +130,20 @@ export default function DashboardLayout({
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex-1" />
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-900">
-            ← Αρχική
-          </Link>
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            <Link href="/" className="hover:text-gray-600">
+              ← Αρχική
+            </Link>
+            <Link href="/dashboard/payments" className="hover:text-gray-600">
+              Πληρωμές
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="hover:text-gray-600"
+            >
+              Έξοδος
+            </button>
+          </div>
         </header>
 
         <motion.main
@@ -108,7 +153,15 @@ export default function DashboardLayout({
         >
           {children}
         </motion.main>
+
+        <Footer />
       </div>
+
+      <NotificationsModal
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        announcements={announcements}
+      />
     </div>
   );
 }

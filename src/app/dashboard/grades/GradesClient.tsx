@@ -1,72 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
-} from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { getSubjectChipColor } from "@/lib/subjectColors";
 
-type Grade = {
+export type GradeEntry = {
   id: string;
   subject: string;
-  examType: string;
-  score: number;
+  typeCategory: "EXAM" | "TEST" | "QUESTIONS";
+  typeLabel: string;
+  title: string | null;
+  score: number | null;
   maxScore: number;
-  date: Date;
-  notes: string | null;
+  absent: boolean;
+  date: string | null;
+  themes: (number | null)[] | null;
+  classStats: { count: number; min: number | null; max: number | null; avg: number | null };
 };
 
-function calcStats(grades: Grade[]) {
-  if (grades.length === 0) return { avg: 0, min: 0, max: 0 };
-  const scores = grades.map((g) => (g.score / g.maxScore) * 20);
-  return {
-    avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
-    min: Math.round(Math.min(...scores) * 10) / 10,
-    max: Math.round(Math.max(...scores) * 10) / 10,
-  };
+const TYPE_STYLE: Record<GradeEntry["typeCategory"], { border: string; label: string }> = {
+  EXAM: { border: "border-l-red-400", label: "text-red-500" },
+  TEST: { border: "border-l-blue-400", label: "text-blue-500" },
+  QUESTIONS: { border: "border-l-purple-400", label: "text-purple-500" },
+};
+
+function getScoreColor(score: number, max: number) {
+  const pct = score / max;
+  if (pct >= 0.8) return "text-green-600";
+  if (pct >= 0.6) return "text-yellow-600";
+  return "text-red-600";
+}
+
+function toTwenty(score: number, max: number) {
+  return Math.round((score / max) * 200) / 10;
 }
 
 export default function GradesClient({
-  grades,
-  classGrades,
+  entries,
+  subjects,
 }: {
-  grades: Grade[];
-  classGrades: any[];
+  entries: GradeEntry[];
+  subjects: string[];
 }) {
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const subjects = ["all", ...Array.from(new Set(grades.map((g) => g.subject)))];
-
-  const filtered = selectedSubject === "all" ? grades : grades.filter((g) => g.subject === selectedSubject);
-  const myStats = calcStats(filtered);
-
-  const classFiltered = selectedSubject === "all" ? classGrades : classGrades.filter((g) => g.subject === selectedSubject);
-  const classStats = calcStats(classFiltered);
-
-  const chartData = filtered.slice().reverse().map((g) => ({
-    name: formatDate(g.date),
-    βαθμός: Math.round((g.score / g.maxScore) * 200) / 10,
-    μάθημα: g.subject,
-    εξέταση: g.examType,
-  }));
-
-  function getScoreColor(score: number, max: number) {
-    const pct = score / max;
-    if (pct >= 0.8) return "text-green-600";
-    if (pct >= 0.6) return "text-yellow-600";
-    return "text-red-600";
-  }
-
-  function getScoreBadge(score: number, max: number) {
-    const pct = score / max;
-    if (pct >= 0.8) return "success";
-    if (pct >= 0.6) return "warning";
-    return "destructive";
-  }
-
   return (
     <div>
       <div className="mb-8">
@@ -74,118 +47,114 @@ export default function GradesClient({
         <p className="text-gray-500 mt-1">Παρακολούθηση επίδοσης ανά μάθημα</p>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {subjects.map((s) => (
-          <button
-            key={s}
-            onClick={() => setSelectedSubject(s)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedSubject === s
-                ? "bg-blue-600 text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:border-blue-300"
-            }`}
-          >
-            {s === "all" ? "Όλα" : s}
-          </button>
-        ))}
-      </div>
+      <div
+        className="grid gap-4"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}
+      >
+        {subjects.map((subject) => {
+          const subjectEntries = entries.filter((e) => e.subject === subject);
+          const clr = getSubjectChipColor(subjects, subject);
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "Μέσος Όρος Μου", value: myStats.avg, sub: "βάση 20" },
-          { label: "Μέσος Τάξης", value: classStats.avg, sub: "βάση 20" },
-          { label: "Ελάχιστος", value: myStats.min, sub: "βαθμός μου" },
-          { label: "Μέγιστος", value: myStats.max, sub: "βαθμός μου" },
-        ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <Card>
-              <CardContent className="pt-5">
-                <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value || "—"}</p>
-                <p className="text-xs text-gray-400">{stat.sub}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+          return (
+            <div key={subject}>
+              <div
+                className="rounded-xl px-3 py-2.5 mb-3 border text-center"
+                style={{ backgroundColor: clr.bg, color: clr.text, borderColor: clr.border }}
+              >
+                <p className="text-sm font-bold truncate">{subject}</p>
+              </div>
 
-      {chartData.length > 1 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Πορεία Βαθμολογίας</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 20]} tick={{ fontSize: 11 }} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload?.length) {
-                      const d = payload[0].payload;
-                      return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg text-sm">
-                          <p className="font-medium">{d.μάθημα}</p>
-                          <p className="text-gray-500">{d.εξέταση}</p>
-                          <p className="text-blue-600 font-bold">{d.βαθμός}/20</p>
+              <div className="space-y-2">
+                {subjectEntries.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-6">Δεν υπάρχουν βαθμολογίες.</p>
+                ) : (
+                  subjectEntries.map((entry) => {
+                    const style = TYPE_STYLE[entry.typeCategory];
+                    const hasGrade = !entry.absent && entry.score !== null;
+
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`rounded-lg border border-l-4 ${style.border} shadow-sm p-3 ${
+                          entry.absent ? "bg-red-50 border-red-100" : "bg-white border-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-[10px] font-bold uppercase tracking-wide ${style.label}`}>
+                              {entry.typeLabel}
+                            </span>
+                            {entry.title && (
+                              <p
+                                className={`text-xs font-semibold mt-0.5 leading-snug line-clamp-2 ${
+                                  entry.absent ? "text-red-600" : "text-gray-900"
+                                }`}
+                              >
+                                {entry.title}
+                              </p>
+                            )}
+                            {entry.date && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {new Date(entry.date).toLocaleDateString("el-GR", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            {entry.absent ? (
+                              <span className="text-[10px] font-bold text-red-500 bg-red-100 px-1.5 py-0.5 rounded">
+                                Απών
+                              </span>
+                            ) : hasGrade ? (
+                              <>
+                                <span className={`text-lg font-bold leading-none ${getScoreColor(entry.score!, entry.maxScore)}`}>
+                                  {entry.score}
+                                </span>
+                                <span className="text-[10px] text-gray-400">/{entry.maxScore}</span>
+                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                  {toTwenty(entry.score!, entry.maxScore)}/20
+                                </p>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-gray-300 italic">Αδιόρθ.</span>
+                            )}
+                          </div>
                         </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <ReferenceLine y={myStats.avg} stroke="#3b82f6" strokeDasharray="4 4" label={{ value: "ΜΟ", fontSize: 11 }} />
-                <Bar dataKey="βαθμός" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Αναλυτική Βαθμολογία ({filtered.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filtered.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">Δεν υπάρχουν βαθμολογίες.</p>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map((grade) => (
-                <div
-                  key={grade.id}
-                  className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900">{grade.subject}</p>
-                    <p className="text-sm text-gray-400">
-                      {grade.examType} · {formatDate(grade.date)}
-                    </p>
-                    {grade.notes && <p className="text-xs text-gray-400 mt-0.5">{grade.notes}</p>}
-                  </div>
-                  <div className="text-right ml-4">
-                    <span className={`text-xl font-bold ${getScoreColor(grade.score, grade.maxScore)}`}>
-                      {grade.score}
-                    </span>
-                    <span className="text-gray-400">/{grade.maxScore}</span>
-                    <div className="mt-1">
-                      <Badge variant={getScoreBadge(grade.score, grade.maxScore) as any}>
-                        {Math.round((grade.score / grade.maxScore) * 200) / 10}/20
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        {entry.themes && (
+                          <div className="flex gap-1 mt-1.5 flex-wrap">
+                            {entry.themes.map((t, i) =>
+                              t !== null ? (
+                                <span
+                                  key={i}
+                                  className="text-[10px] bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded text-gray-500"
+                                >
+                                  Θ{i + 1}:<span className="font-semibold text-gray-700 ml-0.5">{t}</span>
+                                </span>
+                              ) : null
+                            )}
+                          </div>
+                        )}
+
+                        {entry.classStats.count > 0 && !entry.absent && (
+                          <div className="flex justify-between text-[10px] mt-2 pt-2 border-t border-gray-50">
+                            <span className="text-red-400 font-medium">Ελ. {entry.classStats.min}</span>
+                            <span className="text-amber-500 font-medium">Μ.Ο. {entry.classStats.avg?.toFixed(1)}</span>
+                            <span className="text-green-500 font-medium">Μεγ. {entry.classStats.max}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

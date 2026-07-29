@@ -75,6 +75,37 @@ export function getSubjectsForStudent(
   return [...general, ...dirSubjects];
 }
 
+// All subjects offered for a class year across every direction/track — used
+// where there's no single student's direction to narrow down (e.g. admin file uploads).
+export function getAllSubjectsForClassYear(classYear: string): string[] {
+  const general = GENERAL_SUBJECTS_BY_CLASS[classYear] ?? [];
+  const directionMap = DIRECTION_SUBJECTS[classYear] ?? {};
+  const set = new Set(general);
+  for (const subs of Object.values(directionMap)) for (const s of subs) set.add(s);
+  return Array.from(set);
+}
+
+// Top-level folders for the course-files browser (admin + student). ΕΠΑΛ grades
+// share the same subjects, so they're grouped under one folder rather than three.
+export const FILE_FOLDER_GROUPS = [
+  { label: "Α' Γυμνασίου", classYear: "Α' Γυμνασίου" },
+  { label: "Β' Γυμνασίου", classYear: "Β' Γυμνασίου" },
+  { label: "Γ' Γυμνασίου", classYear: "Γ' Γυμνασίου" },
+  { label: "Α' Λυκείου", classYear: "Α' Λυκείου" },
+  { label: "Β' Λυκείου", classYear: "Β' Λυκείου" },
+  { label: "Γ' Λυκείου", classYear: "Γ' Λυκείου" },
+  { label: "ΕΠΑΛ", classYear: "ΕΠΑΛ" },
+];
+
+export function getSubjectsForFileFolder(classYear: string): string[] {
+  if (classYear === "ΕΠΑΛ") {
+    const set = new Set<string>();
+    for (const cy of EPAL_CLASSES) for (const s of getAllSubjectsForClassYear(cy)) set.add(s);
+    return Array.from(set);
+  }
+  return getAllSubjectsForClassYear(classYear);
+}
+
 export const DAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο"];
 export const DAY_SHORT = ["Δευ", "Τρί", "Τετ", "Πέμ", "Παρ", "Σάβ"];
 

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { FILE_CATEGORIES } from "@/lib/fileCategories";
 
 async function checkAdmin() {
   const session = await auth();
@@ -25,10 +26,18 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File;
   const title = formData.get("title") as string;
   const subject = formData.get("subject") as string;
+  const category = formData.get("category") as string;
   const classYear = formData.get("classYear") as string | null;
+  const isFlipbook = formData.get("isFlipbook") === "true";
 
-  if (!file || !title || !subject) {
+  if (!file || !title || !subject || !category) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (!(FILE_CATEGORIES as readonly string[]).includes(category)) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  }
+  if (isFlipbook && !file.name.toLowerCase().endsWith(".pdf")) {
+    return NextResponse.json({ error: "Flip book files must be PDF" }, { status: 400 });
   }
 
   const bytes = await file.arrayBuffer();
@@ -45,7 +54,9 @@ export async function POST(req: NextRequest) {
     data: {
       title,
       subject,
+      category,
       classYear: classYear || null,
+      isFlipbook,
       fileName,
       filePath: `/uploads/${fileName}`,
       fileSize: file.size,

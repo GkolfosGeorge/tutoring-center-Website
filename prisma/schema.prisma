@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = env("SQLITE_DATABASE_URL")
 }
 
 model User {
@@ -50,6 +50,9 @@ model StudentProfile {
 
   // Financial
   tuitionBalance Float               @default(0)
+
+  // Announcements
+  lastSeenAnnouncementsAt DateTime?
 
   grades         Grade[]
   absences       Absence[]
@@ -145,7 +148,9 @@ model CourseFile {
   id         String   @id @default(cuid())
   title      String
   subject    String
+  category   String?  // "Σημειώσεις Μαθήματος" | "Λύσεις Ασκήσεων" | "Διαγωνίσματα" | "Τυπολόγιο" | "Επανάληψη" | "Θεωρία"
   classYear  String?
+  isFlipbook Boolean  @default(false) // view-only in-browser flip book (no direct download link)
   fileName   String
   filePath   String
   fileSize   Int
@@ -195,9 +200,10 @@ model Group {
   name       String         @unique
   classYear  String?
   createdAt  DateTime       @default(now())
-  members     StudentGroup[]
-  examGroups  ExamGroup[]
-  weeklySlots WeeklySlot[]
+  members             StudentGroup[]
+  examGroups          ExamGroup[]
+  weeklySlots         WeeklySlot[]
+  announcementGroups  AnnouncementGroup[]
 }
 
 model StudentGroup {
@@ -268,4 +274,21 @@ model ClassEvent {
   recurrenceId String?
   notes        String?
   createdAt    DateTime @default(now())
+}
+
+model Announcement {
+  id        String              @id @default(cuid())
+  message   String
+  createdAt DateTime            @default(now())
+  groups    AnnouncementGroup[]
+}
+
+model AnnouncementGroup {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  groupId        String
+  group          Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, groupId])
 }
