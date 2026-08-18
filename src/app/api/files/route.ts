@@ -12,8 +12,7 @@ async function checkAdmin() {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const files = await prisma.courseFile.findMany({ orderBy: { uploadedAt: "desc" } });
   return NextResponse.json(files);

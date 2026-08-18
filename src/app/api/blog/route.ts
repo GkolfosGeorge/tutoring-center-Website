@@ -11,7 +11,7 @@ async function checkAdmin() {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const adminView = searchParams.get("admin");
+  const adminView = searchParams.get("admin") && (await checkAdmin());
 
   const posts = await prisma.blogPost.findMany({
     where: adminView ? undefined : { published: true },
