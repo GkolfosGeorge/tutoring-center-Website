@@ -17,6 +17,26 @@
 - **Επαληθεύτηκε (2026-08-18) ότι δεν υπήρξε καμία απώλεια δεδομένων**: κατά το διάστημα που η Neon ήταν άδεια (03/08 → 18/08) δεν έγινε καμία επιτυχής σύνδεση από την εφαρμογή (το branch αρχειοθετήθηκε λόγω αδράνειας στις 17/08, ο admin seed δεν ξαναπειράχτηκε ποτέ μετά τη δημιουργία του). Εξαντλητικός έλεγχος όλων των 57 εγγραφών της Neon επιβεβαίωσε ότι όλες προέρχονται είτε από το migration script είτε από το αρχικό admin seed — καμία ανεξήγητη εγγραφή.
 - Εκκρεμεί: το table `playing_with_neon` (demo table που βάζει αυτόματα η Neon σε νέα projects) υπάρχει ακόμα μέσα στην ίδια τη Neon βάση (αφαιρέθηκε μόνο από το `schema.prisma`). Μπορεί να γίνει `DROP TABLE playing_with_neon;` όποτε βολεύει.
 
+## Backup στρατηγική (2026-08-18)
+Δύο επίπεδα: (α) Neon point-in-time restore (PITR) για γρήγορη ανάκτηση πρόσφατων λαθών, (β) daily `pg_dump` σε Google Drive για ανεξάρτητο, μακροπρόθεσμο αντίγραφο ασφαλείας εκτός Neon.
+
+**(α) Neon PITR** — **επιβεβαιώθηκε: το project είναι σε Free tier (2026-08-18) → μόνο 6 ώρες point-in-time restore**, χωρίς δυνατότητα ρύθμισης σε μεγαλύτερο retention (χρειάζεται paid πλάνο για αυτό — Launch έως 7 μέρες, Scale έως 30 μέρες). 6 ώρες είναι πολύ στενό περιθώριο για πραγματικά δεδομένα μαθητών (αν ένα λάθος/διαγραφή ανακαλυφθεί την επόμενη μέρα, το PITR δεν θα βοηθήσει πια) — το daily backup παρακάτω είναι το πραγματικό δίχτυ ασφαλείας, όχι το Neon PITR. Άξιο σκέψης για το μέλλον: upgrade σε Launch plan όποτε το επιτρέπει ο προϋπολογισμός, αλλά όχι επείγον όσο τρέχει το daily backup.
+
+**(β) Daily pg_dump → Google Drive**: `scripts/backup-db.sh` — τρέχει `pg_dump -Fc` πάνω στο `DATABASE_URL_SITE`, ανεβάζει με `rclone` σε Google Drive (φάκελος `frontistirio-backups`), κρατάει τοπικά αντίγραφα 7 ημερών (ρυθμίσιμο μέσω `RETENTION_DAYS`), προαιρετικό ping σε healthchecks.io (`BACKUP_HEALTHCHECK_URL`) ώστε να έρθει email αν το backup αποτύχει σιωπηλά — δεν χρειάζεται να θυμάσαι να ελέγχεις χειροκίνητα.
+
+**Πλήρως δοκιμασμένο end-to-end στις 2026-08-18** (pg_dump → rclone → πραγματικό Google Drive, όλο το `scripts/backup-db.sh` έτρεξε reference και πέτυχε — υπάρχει ήδη ένα πρώτο πραγματικό backup στο Drive). Σημαντικά ευρήματα από το testing:
+- Η Neon τρέχει PostgreSQL **18.4** — χρειάζεται `pg_dump`/`pg_restore` **v18** (όχι v17), αλλιώς "server version mismatch". Στο Hetzner (`apt install postgresql-client`) βεβαιώσου ότι παίρνεις την v18 σειρά (π.χ. PGDG apt repo αν το default Debian/Ubuntu repo έχει παλαιότερη έκδοση).
+- Το rclone remote `gdrive-backup` έχει ήδη ρυθμιστεί και εξουσιοδοτηθεί (scope `drive.file` — βλέπει μόνο ό,τι δημιουργεί το ίδιο, όχι όλο το Drive) με **δικό μας** Google Cloud OAuth client_id (project `frontistirio-backup` στο Google Cloud Console), όχι το προεπιλεγμένο/κοινόχρηστο client_id του rclone — αυτό αγνοήθηκε επίτηδες γιατί το shared client_id **καταργείται μέσα στο 2026** και θα σταματούσε να δουλεύει σιωπηλά. Το client_secret ΔΕΝ γράφεται εδώ (μυστικό, το CLAUDE.md είναι committed στο git) — βρίσκεται στο Google Cloud Console του χρήστη, στο ίδιο project.
+- Η ρύθμιση (`client_id`, `client_secret`, `refresh_token`) ζει προς το παρόν μόνο τοπικά στο dev μηχάνημα, στο `C:\Users\georg\AppData\Roaming\rclone\rclone.conf`. Όταν γίνει το deployment στο Hetzner, το πιο απλό είναι να αντιγραφεί αυτό το αρχείο (μέσω scp, όχι git) στο VPS ως `~/.config/rclone/rclone.conf` — έτσι δεν χρειάζεται να ξαναγίνει το OAuth consent. Αν προτιμηθεί νέο consent από την αρχή στο VPS, βλ. rclone headless auth flow (`rclone authorize "drive"`).
+
+Υπόλοιπο setup στο Hetzner VPS (εφόσον δεν είναι ακόμα live — προς εκτέλεση όταν γίνει το deployment):
+1. `sudo apt install postgresql-client-18 rclone` (βεβαιώσου ότι είναι η v18, βλ. παραπάνω)
+2. Αντίγραψε το τοπικό `rclone.conf` στο VPS (βλ. παραπάνω) — ΟΧΙ μέσω git/commit, μυστικό αρχείο
+3. Προαιρετικό: λογαριασμός στο [healthchecks.io](https://healthchecks.io) (δωρεάν), δημιουργία ενός check, βάλε το URL του στο `BACKUP_HEALTHCHECK_URL` στο `.env`
+4. `chmod +x scripts/backup-db.sh`
+5. Crontab: `30 3 * * * /path/to/frontistirio-app/scripts/backup-db.sh >> /var/log/frontistirio-backup.log 2>&1`
+6. **Test restore** (ένα backup που δεν έχεις δοκιμάσει να το επαναφέρεις δεν είναι αξιόπιστο backup): `pg_restore --list backup.dump` για γρήγορο sanity check, ή σε ξεχωριστή/δοκιμαστική βάση: `pg_restore -d "<test-db-url>" backup.dump`
+
 ## Δομή
 - `/src/app` — Next.js App Router (public pages, /admin, /dashboard, /api)
 - `/src/components` — admin, dashboard, home, layout, ui
@@ -51,5 +71,7 @@
 - [x] Seed κωδικός admin: αλλαγμένος από default τιμή
 - [x] Ρόλος ΓΡΑΜΜΑΤΕΙΑ: καταργήθηκε 2026-08-18, μόνο ADMIN/STUDENT πλέον
 - [x] Rate limiting στο login: ενεργό 2026-08-18 (βλ. "Κανόνες ασφάλειας")
+- [x] Backup στρατηγική: pg_dump→Google Drive πλήρως δοκιμασμένο 2026-08-18 (δικό μας OAuth client_id, όχι το shared του rclone), υπάρχει ήδη ένα πρώτο πραγματικό backup στο Drive. Neon PITR επιβεβαιωμένο: Free tier = 6 ώρες μόνο.
+- [ ] Backup: crontab στο Hetzner ΔΕΝ έχει μπει ακόμα (δεν είναι live) — εκκρεμεί όταν γίνει το deployment (βλ. "Backup στρατηγική" για ακριβή βήματα)
 - [x] Ακεραιότητα δεδομένων μετά τη μετάβαση SQLite→Postgres: επαληθεύτηκε 2026-08-18, καμία απώλεια/ανεξήγητη εγγραφή (βλ. "Database connection")
 - [ ] `playing_with_neon` demo table ακόμα μέσα στη Neon βάση — προς DROP όποτε βολεύει
