@@ -57,6 +57,7 @@
 ## Κανόνες ασφάλειας
 - Αποδείξεις/παραστατικά πληρωμών ΔΕΝ εμφανίζονται ποτέ online — μόνο outstanding balance
 - Prisma parameterized queries παντού (καμία raw SQL χωρίς λόγο)
+- Γενικός έλεγχος `npm run build` + access-control audit έγινε 2026-08-18 πριν την εισαγωγή πραγματικών δεδομένων: βρέθηκαν και διορθώθηκαν 2 προϋπάρχοντα bugs (`GET /api/files` και `GET /api/blog?admin=1` δεν έλεγχαν σωστά `role === ADMIN`, μόνο "logged in"/τίποτα). Δεν ήταν σχετικά με την αφαίρεση του ρόλου γραμματείας — προϋπήρχαν. Κάθε νέο API route κάτω από admin-only λειτουργία πρέπει να καλεί `checkAdmin()`/`checkStaff()`, ποτέ μόνο `if (!session)`.
 - Ρόλοι/δικαιώματα ελέγχονται σε κάθε API route, όχι μόνο στο UI
 - **Rate limiting στο login** (`src/lib/rateLimiter.ts`, ενσωματωμένο στο `authorize()` του `src/lib/auth.ts`): max 5 αποτυχημένες προσπάθειες ανά 15 λεπτά, ξεχωριστά ανά IP και ανά username (μπλοκάρει αν ξεπεραστεί το ένα από τα δύο). Απλό in-memory Map, χωρίς Redis — επαρκές γιατί η εφαρμογή τρέχει σαν ένα μόνιμο Node process σε ένα VPS, όχι πολλά instances/serverless. **Θα σταματήσει να δουλεύει σωστά αν στο μέλλον τρέξει σε πολλαπλά processes** (π.χ. PM2 cluster mode, ή scaling σε πολλά VPS) — τότε θα χρειαστεί shared store (Redis) γιατί κάθε process θα έχει το δικό του ξεχωριστό Map. Επίσης εξαρτάται από σωστό `X-Forwarded-For` header — αν η εφαρμογή μπει πίσω από reverse proxy (Nginx στο Hetzner), βεβαιώσου ότι το proxy υπερεγγράφει (δεν εμπιστεύεται τυφλά) αυτό το header από τον client.
 
