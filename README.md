@@ -4,7 +4,7 @@
 
 ## Τεχνολογίες
 
-Next.js 14 (App Router), Prisma 5 + PostgreSQL, NextAuth v5, Tailwind CSS, Framer Motion, Recharts.
+Next.js 16 (App Router), Prisma 5 + PostgreSQL, NextAuth v5, Tailwind CSS, Framer Motion, Recharts.
 
 ## Πρώτη εγκατάσταση
 
