@@ -30,7 +30,15 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Λάθος username ή κωδικός.");
+      const rateLimitMatch = result.code?.match(/^rate-limited-(\d+)$/);
+      if (rateLimitMatch) {
+        const minutes = rateLimitMatch[1];
+        setError(
+          `Πολλές αποτυχημένες προσπάθειες σύνδεσης. Δοκίμασε ξανά σε περίπου ${minutes} λεπτά.`
+        );
+      } else {
+        setError("Λάθος username ή κωδικός.");
+      }
     } else {
       router.push("/dashboard");
       router.refresh();

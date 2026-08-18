@@ -37,6 +37,7 @@
 - Αποδείξεις/παραστατικά πληρωμών ΔΕΝ εμφανίζονται ποτέ online — μόνο outstanding balance
 - Prisma parameterized queries παντού (καμία raw SQL χωρίς λόγο)
 - Ρόλοι/δικαιώματα ελέγχονται σε κάθε API route, όχι μόνο στο UI
+- **Rate limiting στο login** (`src/lib/rateLimiter.ts`, ενσωματωμένο στο `authorize()` του `src/lib/auth.ts`): max 5 αποτυχημένες προσπάθειες ανά 15 λεπτά, ξεχωριστά ανά IP και ανά username (μπλοκάρει αν ξεπεραστεί το ένα από τα δύο). Απλό in-memory Map, χωρίς Redis — επαρκές γιατί η εφαρμογή τρέχει σαν ένα μόνιμο Node process σε ένα VPS, όχι πολλά instances/serverless. **Θα σταματήσει να δουλεύει σωστά αν στο μέλλον τρέξει σε πολλαπλά processes** (π.χ. PM2 cluster mode, ή scaling σε πολλά VPS) — τότε θα χρειαστεί shared store (Redis) γιατί κάθε process θα έχει το δικό του ξεχωριστό Map. Επίσης εξαρτάται από σωστό `X-Forwarded-For` header — αν η εφαρμογή μπει πίσω από reverse proxy (Nginx στο Hetzner), βεβαιώσου ότι το proxy υπερεγγράφει (δεν εμπιστεύεται τυφλά) αυτό το header από τον client.
 
 ## Git conventions
 - Commit messages στα Ελληνικά
@@ -48,4 +49,5 @@
 - [ ] Deployment στο Hetzner: όχι ακόμα live
 - [x] Seed κωδικός admin: αλλαγμένος από default τιμή
 - [x] Ρόλος ΓΡΑΜΜΑΤΕΙΑ: καταργήθηκε 2026-08-18, μόνο ADMIN/STUDENT πλέον
+- [x] Rate limiting στο login: ενεργό 2026-08-18 (βλ. "Κανόνες ασφάλειας")
 - [ ] `playing_with_neon` demo table ακόμα μέσα στη Neon βάση — προς DROP όποτε βολεύει
