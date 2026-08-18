@@ -25,13 +25,6 @@ const navItems = [
   { href: "/admin/success-stories", label: "Βαθμοί Πανελληνίων/Επιτυχόντες", icon: Trophy },
 ];
 
-const secretaryItems = [
-  ANNOUNCEMENTS_ITEM,
-  { href: "/admin/calendar", label: "Ημερολόγιο", icon: CalendarDays },
-  { href: "/admin/groups", label: "Τμήματα", icon: Layers },
-  { href: "/admin/students", label: "Μαθητές", icon: Users },
-];
-
 export default function AdminLayout({
   children,
   userName,
@@ -44,8 +37,6 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const pathname = usePathname();
-
-  const visibleItems = role === "SECRETARY" ? secretaryItems : navItems;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -71,7 +62,7 @@ export default function AdminLayout({
         </div>
 
         <nav className="px-3 py-4 space-y-0.5">
-          {visibleItems.map((item) => {
+          {navItems.map((item) => {
             if (!item.href) {
               return (
                 <button

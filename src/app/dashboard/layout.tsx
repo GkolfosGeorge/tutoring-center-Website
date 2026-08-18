@@ -7,7 +7,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   if (!session) redirect("/login");
 
   const role = (session.user as any).role;
-  if (role === "ADMIN" || role === "SECRETARY") redirect("/admin");
+  if (role === "ADMIN") redirect("/admin");
 
   return (
     <DashboardLayout userName={session.user?.name ?? "Μαθητής"}>

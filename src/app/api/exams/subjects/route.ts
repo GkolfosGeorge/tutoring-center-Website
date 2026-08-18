@@ -6,7 +6,7 @@ async function checkStaff() {
   const session = await auth();
   if (!session) return false;
   const role = (session.user as any).role;
-  return role === "ADMIN" || role === "SECRETARY";
+  return role === "ADMIN";
 }
 
 // Returns all distinct subjects that at least one student is enrolled in

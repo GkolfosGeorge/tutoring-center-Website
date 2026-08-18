@@ -10,13 +10,8 @@ function randomPassword(): string {
 
 async function main() {
   const generatedAdminPassword = randomPassword();
-  const generatedSecretaryPassword = randomPassword();
-
   const adminPlain = process.env.SEED_ADMIN_PASSWORD || generatedAdminPassword;
-  const secretaryPlain = process.env.SEED_SECRETARY_PASSWORD || generatedSecretaryPassword;
-
   const adminPassword = await bcrypt.hash(adminPlain, 10);
-  const secretaryPassword = await bcrypt.hash(secretaryPlain, 10);
 
   await prisma.user.upsert({
     where: { username: "admin" },
@@ -29,25 +24,11 @@ async function main() {
     },
   });
 
-  await prisma.user.upsert({
-    where: { username: "grammateas" },
-    update: { password: secretaryPassword },
-    create: {
-      name: "Γραμματεία",
-      username: "grammateas",
-      password: secretaryPassword,
-      role: "SECRETARY",
-    },
-  });
-
-  console.log("✓ Users seeded (password reset to the value below on every run).");
+  console.log("✓ Admin seeded (password reset to the value below on every run).");
   if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.log(`  Admin:     admin / ${adminPlain}`);
+    console.log(`  Admin: admin / ${adminPlain}`);
   }
-  if (!process.env.SEED_SECRETARY_PASSWORD) {
-    console.log(`  Secretary: grammateas / ${secretaryPlain}`);
-  }
-  console.log("⚠  Save these now — they are not stored anywhere else. Change on first login.");
+  console.log("⚠  Save this now — it is not stored anywhere else. Change on first login.");
 }
 
 main()

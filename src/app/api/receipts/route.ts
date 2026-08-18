@@ -8,7 +8,7 @@ async function checkStaff() {
   const session = await auth();
   if (!session) return false;
   const role = (session.user as any).role;
-  return role === "ADMIN" || role === "SECRETARY";
+  return role === "ADMIN";
 }
 
 export async function GET(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const role = (session.user as any).role;
   const ownProfileId = (session.user as any).studentProfileId;
-  const isStaff = role === "ADMIN" || role === "SECRETARY";
+  const isStaff = role === "ADMIN";
   if (!isStaff && studentId !== ownProfileId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

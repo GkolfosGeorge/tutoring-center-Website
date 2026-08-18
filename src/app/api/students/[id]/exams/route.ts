@@ -6,7 +6,7 @@ async function checkStaff() {
   const session = await auth();
   if (!session) return false;
   const role = (session.user as any).role;
-  return role === "ADMIN" || role === "SECRETARY";
+  return role === "ADMIN";
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

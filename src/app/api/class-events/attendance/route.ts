@@ -6,7 +6,7 @@ async function checkStaff() {
   const session = await auth();
   if (!session) return false;
   const role = (session.user as any).role;
-  return role === "ADMIN" || role === "SECRETARY";
+  return role === "ADMIN";
 }
 
 // GET /api/class-events/attendance?groupName=X&subject=Y&date=YYYY-MM-DD
