@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("SQLITE_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL_SITE")
 }
 
 model User {
@@ -19,79 +19,67 @@ model User {
 }
 
 model StudentProfile {
-  id             String              @id @default(cuid())
-  userId         String              @unique
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Class info
-  classYear      String
-  direction      String?
-  schoolYear     String?
-
-  groups         StudentGroup[]
-
-  // Personal details
-  firstName      String?
-  lastName       String?
-  phone          String?
-  email          String?
-  fatherName     String?
-  fatherPhone    String?
-  motherName     String?
-  motherPhone    String?
-  primaryContact String?             // "FATHER" | "MOTHER" — which phone is the main emergency contact
-  parentEmail    String?
-  address        String?
-  comments       String?
-
-  // Tax details (for receipts)
-  afm            String?
-  doy            String?
-
-  // Financial
-  tuitionBalance Float               @default(0)
-
-  // Announcements
+  id                      String              @id @default(cuid())
+  userId                  String              @unique
+  classYear               String
+  direction               String?
+  schoolYear              String?
+  firstName               String?
+  lastName                String?
+  phone                   String?
+  email                   String?
+  fatherName              String?
+  fatherPhone             String?
+  motherName              String?
+  motherPhone             String?
+  primaryContact          String? // "FATHER" | "MOTHER" — which phone is the main emergency contact
+  parentEmail             String?
+  address                 String?
+  comments                String?
+  afm                     String?
+  doy                     String?
+  tuitionBalance          Float               @default(0)
   lastSeenAnnouncementsAt DateTime?
-
-  grades         Grade[]
-  absences       Absence[]
-  payments       Payment[]
-  receipts       Receipt[]
-  enrollments    SubjectEnrollment[]
-  examGrades     ExamGrade[]
+  absences                Absence[]
+  examGrades              ExamGrade[]
+  grades                  Grade[]
+  payments                Payment[]
+  receipts                Receipt[]
+  groups                  StudentGroup[]
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments             SubjectEnrollment[]
 }
 
 model SubjectEnrollment {
   id              String          @id @default(cuid())
   studentId       String
-  student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject         String
   costPerHour     Float           @default(0)
   durationMinutes Int             @default(60)
-  slots           WeeklySlot[]
-  sessionStatuses SessionStatus[]
   createdAt       DateTime        @default(now())
+  sessionStatuses SessionStatus[]
+  student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  slots           WeeklySlot[]
 }
 
 model WeeklySlot {
   id           String            @id @default(cuid())
   enrollmentId String
-  enrollment   SubjectEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   dayOfWeek    Int
   startTime    String
   endTime      String
   groupId      String?
-  group        Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  enrollment   SubjectEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  group        Group?            @relation(fields: [groupId], references: [id])
 }
 
 model SessionStatus {
   id           String            @id @default(cuid())
   enrollmentId String
-  enrollment   SubjectEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   date         DateTime
   held         Boolean           @default(true)
   createdAt    DateTime          @default(now())
+  enrollment   SubjectEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   @@unique([enrollmentId, date])
 }
@@ -99,7 +87,6 @@ model SessionStatus {
 model Grade {
   id        String         @id @default(cuid())
   studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject   String
   examType  String
   score     Float
@@ -107,48 +94,49 @@ model Grade {
   date      DateTime
   notes     String?
   createdAt DateTime       @default(now())
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Absence {
   id        String         @id @default(cuid())
   studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject   String
   date      DateTime
   justified Boolean        @default(false)
   notes     String?
   createdAt DateTime       @default(now())
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
   id            String         @id @default(cuid())
   studentId     String
-  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   amount        Float
   date          DateTime
   description   String
   paymentMethod String?
   isPaid        Boolean        @default(true)
   createdAt     DateTime       @default(now())
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Receipt {
   id         String         @id @default(cuid())
   studentId  String
-  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   amount     Float
   date       DateTime
   fileName   String
   filePath   String
   fileSize   Int
   uploadedAt DateTime       @default(now())
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model CourseFile {
   id         String   @id @default(cuid())
   title      String
   subject    String
-  category   String?  // "Σημειώσεις Μαθήματος" | "Λύσεις Ασκήσεων" | "Διαγωνίσματα" | "Τυπολόγιο" | "Επανάληψη" | "Θεωρία"
+  category   String? // "Σημειώσεις Μαθήματος" | "Λύσεις Ασκήσεων" | "Διαγωνίσματα" | "Τυπολόγιο" | "Επανάληψη" | "Θεωρία"
   classYear  String?
   isFlipbook Boolean  @default(false) // view-only in-browser flip book (no direct download link)
   fileName   String
@@ -182,38 +170,38 @@ model SuccessStory {
   id              String   @id @default(cuid())
   firstName       String
   lastName        String
-  academicYear    Int                 // ακαδημαϊκό/εισαγωγικό έτος
-  direction       String              // "Θετική" | "Οικονομίας/Πληροφορικής" | "Θεωρητική"
-  directionTrack  String?             // "Μαθηματικά" | "Βιολογία" — only when direction = "Θετική"
-  university      String              // Ίδρυμα εισαγωγής
-  department      String?             // Τμήμα εισαγωγής
-  grades          String?             // JSON: [{"subject":"Μαθηματικά","score":18.5}, ...]
-  generalScore    Float?              // Γενικός Βαθμός Πρόσβασης (0-20)
-  admissionPoints Float?              // Μόρια Εισαγωγής
+  academicYear    Int // ακαδημαϊκό/εισαγωγικό έτος
+  direction       String // "Θετική" | "Οικονομίας/Πληροφορικής" | "Θεωρητική"
+  directionTrack  String? // "Μαθηματικά" | "Βιολογία" — only when direction = "Θετική"
+  university      String // Ίδρυμα εισαγωγής
+  department      String? // Τμήμα εισαγωγής
+  grades          String? // JSON: [{"subject":"Μαθηματικά","score":18.5}, ...]
+  generalScore    Float? // Γενικός Βαθμός Πρόσβασης (0-20)
+  admissionPoints Float? // Μόρια Εισαγωγής
   photoUrl        String?
   order           Int      @default(0)
   createdAt       DateTime @default(now())
 }
 
 model Group {
-  id         String         @id @default(cuid())
-  name       String         @unique
-  classYear  String?
-  createdAt  DateTime       @default(now())
-  members             StudentGroup[]
-  examGroups          ExamGroup[]
-  weeklySlots         WeeklySlot[]
-  announcementGroups  AnnouncementGroup[]
+  id                 String              @id @default(cuid())
+  name               String              @unique
+  classYear          String?
+  createdAt          DateTime            @default(now())
+  announcementGroups AnnouncementGroup[]
+  examGroups         ExamGroup[]
+  members            StudentGroup[]
+  weeklySlots        WeeklySlot[]
 }
 
 model StudentGroup {
   id        String         @id @default(cuid())
   studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   groupId   String
-  group     Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subjects  String?        // JSON: ["Μαθηματικά","Φυσική"] – null means all subjects
+  subjects  String? // JSON: ["Μαθηματικά","Φυσική"] – null means all subjects
   createdAt DateTime       @default(now())
+  group     Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, groupId])
 }
@@ -224,22 +212,22 @@ model Exam {
   description    String?
   subject        String
   classYear      String
-  examType       String      // "EXAM" | "TEST" | "QUESTIONS"
+  examType       String // "EXAM" | "TEST" | "QUESTIONS"
   scale          Int         @default(100)
   examDate       String?
   examTime       String?
   ekfoniseisPath String?
   lyseisPath     String?
   createdAt      DateTime    @default(now())
-  groups         ExamGroup[]
   grades         ExamGrade[]
+  groups         ExamGroup[]
 }
 
 model ExamGroup {
   id      String @id @default(cuid())
   examId  String
-  exam    Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
   groupId String
+  exam    Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([examId, groupId])
@@ -248,9 +236,7 @@ model ExamGroup {
 model ExamGrade {
   id          String         @id @default(cuid())
   examId      String
-  exam        Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
   studentId   String
-  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   theme1      Float?
   theme2      Float?
   theme3      Float?
@@ -259,6 +245,8 @@ model ExamGrade {
   absent      Boolean        @default(false)
   writtenDate String?
   updatedAt   DateTime       @updatedAt
+  exam        Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([examId, studentId])
 }
@@ -270,7 +258,7 @@ model ClassEvent {
   date         DateTime
   startTime    String
   endTime      String
-  classroom    String?  // "1" | "2" | "3" | "4"
+  classroom    String? // "1" | "2" | "3" | "4"
   recurrenceId String?
   notes        String?
   createdAt    DateTime @default(now())
@@ -286,8 +274,8 @@ model Announcement {
 model AnnouncementGroup {
   id             String       @id @default(cuid())
   announcementId String
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
   groupId        String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
   group          Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([announcementId, groupId])

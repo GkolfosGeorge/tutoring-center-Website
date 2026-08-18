@@ -4,7 +4,7 @@
 
 ## Τεχνολογίες
 
-Next.js 14 (App Router), Prisma 5 + SQLite, NextAuth v5, Tailwind CSS, Framer Motion, Recharts.
+Next.js 14 (App Router), Prisma 5 + PostgreSQL, NextAuth v5, Tailwind CSS, Framer Motion, Recharts.
 
 ## Πρώτη εγκατάσταση
 
@@ -15,10 +15,10 @@ npm install
 cp .env.example .env
 ```
 
-Στο `.env`, όρισε οπωσδήποτε ένα δικό σου `NEXTAUTH_SECRET` (τυχαία τιμή, π.χ. `openssl rand -base64 32`). Τα στοιχεία SMTP είναι προαιρετικά — χρειάζονται μόνο για το κουμπί "Email Γονέα" στη Σύνοψη μαθητή.
+Στο `.env`, όρισε οπωσδήποτε ένα δικό σου `NEXTAUTH_SECRET` (τυχαία τιμή, π.χ. `openssl rand -base64 32`) και το `DATABASE_URL_SITE` της Postgres βάσης σου (Neon/Supabase/Railway κ.λπ.) — ονομάζεται `DATABASE_URL_SITE` και όχι `DATABASE_URL` για να μη συγκρούεται με τυχόν `DATABASE_URL` ορισμένο στο περιβάλλον του συστήματος. Τα στοιχεία SMTP είναι προαιρετικά — χρειάζονται μόνο για το κουμπί "Email Γονέα" στη Σύνοψη μαθητή.
 
 ```bash
-# Δημιουργία της βάσης (SQLite) και εφαρμογή του schema
+# Δημιουργία της βάσης (Postgres) και εφαρμογή του schema
 npx prisma migrate deploy
 
 # Δημιουργία αρχικών λογαριασμών admin/γραμματείας
@@ -31,12 +31,7 @@ npm run dev
 
 ### Αρχικοί λογαριασμοί (seed)
 
-| Ρόλος      | Username     | Κωδικός         |
-|------------|--------------|-----------------|
-| Admin      | `admin`      | `admin123`      |
-| Γραμματεία | `grammateas` | `secretary123`  |
-
-**Άλλαξε αυτούς τους κωδικούς αμέσως μετά την πρώτη σύνδεση** (ειδικά αν το repository γίνει δημόσιο — οι παραπάνω τιμές είναι ορατές στον κώδικα seed).
+Το `npx prisma db seed` δημιουργεί (ή επαναφέρει) τους λογαριασμούς `admin` και `grammateas` με **τυχαίο κωδικό που τυπώνεται μία φορά στο τερματικό** — δεν αποθηκεύεται πουθενά αλλού. Σημείωσέ τον αμέσως. Αν θέλεις συγκεκριμένους κωδικούς, όρισε `SEED_ADMIN_PASSWORD` / `SEED_SECRETARY_PASSWORD` στο `.env` πριν το τρέξεις.
 
 ## Δομή
 
@@ -48,8 +43,7 @@ npm run dev
 
 ## Σημαντικό — δεδομένα που ΔΕΝ ανεβαίνουν στο git
 
-- `prisma/dev.db` — η βάση SQLite (πραγματικά στοιχεία μαθητών/γονέων)
 - `public/uploads/` — αναρτημένα αρχεία (διαγωνίσματα, αποδείξεις, υλικό μαθημάτων)
-- `.env` — μυστικά/credentials
+- `.env` — μυστικά/credentials (περιλαμβάνει το `DATABASE_URL_SITE` της Postgres βάσης)
 
 Αυτά εξαιρούνται ήδη μέσω `.gitignore`. Σε νέο περιβάλλον (νέο clone, deployment) η βάση δημιουργείται από την αρχή με τα migrations + seed παραπάνω, και ο φάκελος uploads δημιουργείται αυτόματα όταν γίνει το πρώτο ανέβασμα αρχείου.
